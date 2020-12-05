@@ -8,10 +8,11 @@
   "dependencies": {
     "convert-time": "^0.3.0",
     "dayjs": "^1.9.6",
+    "tiny-timer": "^1.5.1",
     "vue": "^3.0.2"
   },
   "devDependencies": {
-    "vite": "^1.0.0-rc.8",
-    "@vue/compiler-sfc": "^3.0.2"
+    "@vue/compiler-sfc": "^3.0.2",
+    "vite": "^1.0.0-rc.13"
   }
 }
