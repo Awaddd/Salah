@@ -1,6 +1,8 @@
 <template>
-  <h1 style="text-transform: capitalize;">{{state.currentPrayer}}</h1>
-  <h3>{{state.userFriendlyDateToday}}</h3>
+  <h3 style="text-transform: capitalize;">{{state.currentPrayer}}</h3>
+  <h2 style="text-transform: capitalize;">{{state.currentPrayerTime}}</h2>
+  <h1 style="margin-top: 0; height: 2.4rem;"><span v-if="state.countdown != null">-{{state.countdown}}</span></h1>
+  <h1 style="margin-top: 0;">{{state.today}}</h1>
 
   <div style="display: grid; grid-template-columns: max-content max-content; justify-content: center; grid-gap: 5em; font-size: 1.3em;">
     <ul style="display: grid; justify-items: start;">
@@ -17,13 +19,12 @@
     <button @click="nextDate">next</button>
   </div>
 
-  <p><b>Notes: </b>Count down towards next prayer time and cover all possible scenarios</p>
 </template>
 
 <script setup>
 
 import { apiKey } from '../../config.json';
-import { ref, reactive, toRefs, computed, watchEffect } from "vue";
+import { reactive, computed, watchEffect } from "vue";
 import dayjs from "dayjs";
 import isBetween from '../../node_modules/dayjs/esm/plugin/isBetween/index.js'
 import advancedFormat from '../../node_modules/dayjs/esm/plugin/advancedFormat/index.js'
@@ -34,11 +35,12 @@ dayjs.extend(isBetween);
 dayjs.extend(advancedFormat);
 
 const state = reactive({
-  prayerTimes: {}, 
+  prayerTimes: {},
   prayerTimeKeys: [],
   today: dayjs().format("YYYY-MM-DD"),
   userFriendlyDateToday: dayjs().format("Do MMMM YYYY"),
-  now: dayjs().format('HH:mm')
+  now: dayjs().format('HH:mm'),
+  countdown: null
 });
 
 let prayerContainer = [];
@@ -74,6 +76,7 @@ function getNextPrayer () {
 
   if (dayjs(`${state.today} ${state.now}`).isBetween(`${state.today} ${prayerContainer[key].time}`, dayjs(`${state.today} ${previous}`)) == true) {
     state.currentPrayer = prayerContainer[key].name;
+    state.currentPrayerTime = prayerContainer[key].time;
   }
 
   return prayerContainer[key].time;
@@ -101,7 +104,7 @@ fetch(`https://www.londonprayertimes.com/api/times/?format=json&key=${apiKey}&ye
       prayer.sunrise = convertTime(prayer.sunrise + 'am');
 
       let dhuhrLongDate = dayjs(state.today + ' ' + prayer.dhuhr);
-      prayer.dhuhr = dhuhrLongDate.isBefore(state.today + ' 11:59') ? convertTime(prayer.dhuhr + 'am') : convertTime(prayer.dhuhr + 'pm');
+      prayer.dhuhr = dhuhrLongDate.isAfter(state.today + ' 11:00') ? convertTime(prayer.dhuhr + 'am') : convertTime(prayer.dhuhr + 'pm');
 
       prayer.asr = convertTime(prayer.asr + 'pm');
       prayer.magrib = convertTime(prayer.magrib + 'pm');
@@ -130,25 +133,33 @@ fetch(`https://www.londonprayertimes.com/api/times/?format=json&key=${apiKey}&ye
   });
 
   watchEffect(() => {
-    // console.log(state.now);
-    // console.log(state.currentPrayer);
-
-    if (state.now > '23:59') {
-      // next prayer can only be fajr. set and start counting down 
+    if (dayjs(`${state.today} ${state.now}`).isAfter(dayjs(`${state.today} 23:59`))) {
       state.currentPrayer = 'fajr';
-      // do some timer stuff...
-      // start counting down
-      // ensure there's a safe period where the timer is off for 30 minutes ish after a countdown ends
+    }
+
+    if (state.currentPrayerTime != null) {
+      // initialize timer if the next prayer/time is set
+      startTimer()
     }
   });
 
-  
-  const timer = new Timer();
-  timer.on('done', () => {
+  function startTimer() {
+    // get time until next prayer in milliseconds and pass that into the timer
+    let timeTillNextEvent = dayjs(`${state.today} ${state.currentPrayerTime}`).diff(dayjs(`${state.today} ${state.now}`));
+    timer.start(timeTillNextEvent);
     getNextPrayer();
+  }
+
+  const timer = new Timer();
+
+  timer.on('done', () => {
+    // once next prayer time is reached, restart timer
+    startTimer()
   });
   
-  // this should probably happen inside the watch. param is time until
-  timer.start(5000);
+  timer.on('tick', (ms) => {
+    // update the countdown every millisecond
+    state.countdown = dayjs(ms).subtract(1, "hour").format('HH:mm:ss')
+  })
 
 </script>
