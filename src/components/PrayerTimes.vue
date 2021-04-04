@@ -83,7 +83,10 @@ function getNextPrayer () {
   }, prayerContainer[0].time);
 
   // if currentPrayer is still not defined, set the current prayer to the last prayer
-  if (typeof state.currentPrayer == 'undefined') state.currentPrayer = 'isha';
+  if (typeof state.currentPrayer == 'undefined') {
+    state.currentPrayer = 'fajr'
+    state.currentPrayerTime = prayerContainer[1].time
+  };
 }
 
 fetch(`https://www.londonprayertimes.com/api/times/?format=json&key=${apiKey}&year=${dayjs().year()}&month=${dayjs().month() + 1}`)
@@ -144,10 +147,12 @@ fetch(`https://www.londonprayertimes.com/api/times/?format=json&key=${apiKey}&ye
   });
 
   function startTimer() {
+    // calculate next prayer
+    getNextPrayer();
+
     // get time until next prayer in milliseconds and pass that into the timer
     let timeTillNextEvent = dayjs(`${state.today} ${state.currentPrayerTime}`).diff(dayjs(`${state.today} ${state.now}`));
     timer.start(timeTillNextEvent);
-    getNextPrayer();
   }
 
   const timer = new Timer();

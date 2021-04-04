@@ -3,9 +3,11 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@vitejs/plugin-vue": "^1.2.1",
     "convert-time": "^0.3.0",
     "dayjs": "^1.9.6",
     "tiny-timer": "^1.5.1",
@@ -13,6 +15,6 @@
   },
   "devDependencies": {
     "@vue/compiler-sfc": "^3.0.2",
-    "vite": "^1.0.0-rc.13"
+    "vite": "^2.1.5"
   }
 }
